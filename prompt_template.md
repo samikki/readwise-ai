@@ -3,7 +3,7 @@ This is NOT a generic news summary — it is written through a particular intell
 
 ## Reader profile
 
-$taste_profile
+$taste_profile$local_profile
 
 ---
 

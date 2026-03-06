@@ -1,4 +1,3 @@
-import json
 import logging
 from pathlib import Path
 from string import Template
@@ -6,6 +5,7 @@ from string import Template
 logger = logging.getLogger(__name__)
 
 _PROFILE_PATH = Path("taste_profile.md")
+_LOCAL_PROFILE_PATH = Path("local_profile.md")
 _TEMPLATE_PATH = Path("prompt_template.md")
 
 
@@ -17,6 +17,14 @@ def load_profile() -> str:
     return _PROFILE_PATH.read_text(encoding="utf-8")
 
 
+def load_local_profile() -> str:
+    """Load the local addendum profile. Returns empty string if file is absent."""
+    if not _LOCAL_PROFILE_PATH.exists():
+        logger.debug("local_profile.md not found — skipping addendum")
+        return ""
+    return _LOCAL_PROFILE_PATH.read_text(encoding="utf-8").strip()
+
+
 def load_template() -> str:
     if not _TEMPLATE_PATH.exists():
         raise FileNotFoundError(f"{_TEMPLATE_PATH} not found")
@@ -25,8 +33,11 @@ def load_template() -> str:
 
 def render_prompt(*, n_articles: int, articles_json: str) -> str:
     """Load profile + template from disk and render the final prompt."""
+    local = load_local_profile()
+    local_block = f"\n\n---\n\n{local}" if local else ""
     return Template(load_template()).substitute(
         taste_profile=load_profile(),
+        local_profile=local_block,
         n_articles=n_articles,
         articles_json=articles_json,
     )
