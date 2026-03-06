@@ -50,8 +50,11 @@ def filter_and_prioritise(
         tags = _normalise_tags(doc.get("tags", {}))
         if any(t in ignore_tags for t in tags):
             continue
+        doc_id = doc.get("id", "")
         processed.append(
             {
+                "id": doc_id,
+                "readwise_url": f"https://read.readwise.io/read/{doc_id}" if doc_id else None,
                 "title": doc.get("title"),
                 "author": doc.get("author"),
                 "tags": tags,
