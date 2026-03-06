@@ -6,6 +6,7 @@ import logging
 import sys
 from datetime import datetime, timedelta
 
+from readwise_ai.config import DEFAULT_DAYS, DEFAULT_MAX_ARTICLES, DEFAULT_SOURCE
 from readwise_ai.readwise import fetch_documents, save_document
 from readwise_ai.summariser import build_readwise_payload, filter_and_prioritise, generate_html_summary
 
@@ -17,21 +18,21 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate HTML summary from Readwise feed.")
     parser.add_argument(
         "--source",
-        default="feed",
+        default=DEFAULT_SOURCE,
         choices=["new", "later", "shortlist", "archive", "feed"],
-        help="Readwise Reader location to fetch from (default: feed)",
+        help=f"Readwise Reader location to fetch from (default: {DEFAULT_SOURCE})",
     )
     parser.add_argument(
         "--days",
         type=int,
-        default=1,
-        help="How many days back to fetch articles (default: 1)",
+        default=DEFAULT_DAYS,
+        help=f"How many days back to fetch articles (default: {DEFAULT_DAYS})",
     )
     parser.add_argument(
         "--max-articles",
         type=int,
-        default=50,
-        help="Maximum articles to pass to the model (default: 50)",
+        default=DEFAULT_MAX_ARTICLES,
+        help=f"Maximum articles to pass to the model (default: {DEFAULT_MAX_ARTICLES})",
     )
     parser.add_argument(
         "--dry-run",

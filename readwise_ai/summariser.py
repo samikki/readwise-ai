@@ -2,12 +2,10 @@ import json
 import logging
 from datetime import datetime
 
-from .config import IGNORE_TAGS, OPENAI_MODEL, PRIORITY_TAGS
+from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, PRIORITY_TAGS
 from .openai_client import client
 
 logger = logging.getLogger(__name__)
-
-_DEFAULT_MAX_ARTICLES = 50
 
 
 def _normalise_tags(raw_tags: dict | list) -> list[str]:
@@ -31,7 +29,7 @@ def filter_and_prioritise(
     raw_docs: list[dict],
     ignore_tags: list[str] = IGNORE_TAGS,
     priority_tags: list[str] = PRIORITY_TAGS,
-    max_articles: int = _DEFAULT_MAX_ARTICLES,
+    max_articles: int = DEFAULT_MAX_ARTICLES,
 ) -> list[dict]:
     """Filter unread docs, normalise tags, sort by priority, cap at max_articles.
 

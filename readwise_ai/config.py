@@ -1,16 +1,27 @@
 import os
+import tomllib
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- Secrets from .env ---
 READWISE_TOKEN: str = os.getenv("READWISE_TOKEN", "")
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.4")
 
-PRIORITY_TAGS: list[str] = ["Local", "Tesla", "AI", "Movies", "TV", "Games", "Technology"]
-IGNORE_TAGS: list[str] = ["Humour", "Summary"]
+# --- Settings from config.toml ---
+_CONFIG_PATH = Path(__file__).parent.parent / "config.toml"
+with _CONFIG_PATH.open("rb") as _f:
+    _cfg = tomllib.load(_f)
 
-TASTE_PROFILE_SOURCE: str = os.getenv(
-    "TASTE_PROFILE_SOURCE",
-    "/path/to/your/taste_profile_source.md",
-)
+OPENAI_MODEL: str = _cfg["openai"]["model"]
+
+DEFAULT_DAYS: int = _cfg["fetch"]["days"]
+DEFAULT_SOURCE: str = _cfg["fetch"]["source"]
+DEFAULT_MAX_ARTICLES: int = _cfg["fetch"]["max_articles"]
+
+PRIORITY_TAGS: list[str] = _cfg["tags"]["priority"]
+IGNORE_TAGS: list[str] = _cfg["tags"]["ignore"]
+
+TASTE_PROFILE_SOURCE: str = _cfg["profile"]["source"]
