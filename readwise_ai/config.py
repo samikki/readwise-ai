@@ -9,3 +9,8 @@ OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 PRIORITY_TAGS: list[str] = ["Local", "Tesla", "AI", "Movies", "TV", "Games", "Technology"]
 IGNORE_TAGS: list[str] = ["Humour", "Summary"]
+
+TASTE_PROFILE_SOURCE: str = os.getenv(
+    "TASTE_PROFILE_SOURCE",
+    "/path/to/your/taste_profile_source.md",
+)

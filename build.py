@@ -7,7 +7,7 @@ import sys
 from datetime import datetime, timedelta
 
 from readwise_ai.readwise import fetch_documents, save_document
-from readwise_ai.summariser import build_readwise_payload, generate_html_summary, process_documents
+from readwise_ai.summariser import build_readwise_payload, filter_and_prioritise, generate_html_summary
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -26,6 +26,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="How many days back to fetch articles (default: 1)",
+    )
+    parser.add_argument(
+        "--max-articles",
+        type=int,
+        default=50,
+        help="Maximum articles to pass to the model (default: 50)",
     )
     parser.add_argument(
         "--dry-run",
@@ -50,13 +56,13 @@ def main() -> None:
         logger.warning("No documents fetched — nothing to summarise.")
         sys.exit(0)
 
-    sorted_tags = process_documents(raw_docs)
+    docs = filter_and_prioritise(raw_docs, max_articles=args.max_articles)
 
-    if not sorted_tags:
-        logger.warning("No tags to process after filtering.")
+    if not docs:
+        logger.warning("No articles remain after filtering.")
         sys.exit(0)
 
-    html = generate_html_summary(sorted_tags)
+    html = generate_html_summary(docs)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

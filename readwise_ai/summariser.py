@@ -1,11 +1,13 @@
+import json
 import logging
 from datetime import datetime
 
 from .config import IGNORE_TAGS, OPENAI_MODEL, PRIORITY_TAGS
 from .openai_client import client
-from .prompts import html_segment_prompt
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_MAX_ARTICLES = 50
 
 
 def _normalise_tags(raw_tags: dict | list) -> list[str]:
@@ -14,22 +16,37 @@ def _normalise_tags(raw_tags: dict | list) -> list[str]:
     return list(raw_tags)
 
 
-def process_documents(
+def _priority_rank(doc: dict, priority_tags: list[str]) -> tuple[int, int]:
+    """Sort key: (lowest priority tag index, unique-source flag inverted)."""
+    tags = doc.get("tags", [])
+    tag_rank = min(
+        (priority_tags.index(t) for t in tags if t in priority_tags),
+        default=len(priority_tags),
+    )
+    unique_source = 0 if doc.get("number_from_this_site", 1) == 1 else 1
+    return (tag_rank, unique_source)
+
+
+def filter_and_prioritise(
     raw_docs: list[dict],
     ignore_tags: list[str] = IGNORE_TAGS,
     priority_tags: list[str] = PRIORITY_TAGS,
-) -> dict[str, list[dict]]:
-    """Filter, normalise, and group documents by tag, sorted by priority."""
+    max_articles: int = _DEFAULT_MAX_ARTICLES,
+) -> list[dict]:
+    """Filter unread docs, normalise tags, sort by priority, cap at max_articles.
+
+    Returns a flat deduped list — one entry per article, no duplication across tags.
+    """
     # Drop already-read items
     docs = [d for d in raw_docs if d.get("reading_progress", 0) < 2]
 
-    # Count articles per site
+    # Count articles per site for the unique-source signal
     site_count: dict[str, int] = {}
     for doc in docs:
         site = doc.get("site_name") or ""
         site_count[site] = site_count.get(site, 0) + 1
 
-    # Normalise and filter
+    # Normalise tags and filter ignored
     processed: list[dict] = []
     for doc in docs:
         tags = _normalise_tags(doc.get("tags", {}))
@@ -43,87 +60,43 @@ def process_documents(
                 "summary": doc.get("summary"),
                 "site_name": doc.get("site_name"),
                 "source_url": doc.get("source_url"),
-                "image_url": doc.get("image_url"),
                 "published_date": doc.get("published_date"),
                 "number_from_this_site": site_count.get(doc.get("site_name") or "", 1),
             }
         )
 
-    logger.info("%d articles after filtering", len(processed))
+    # Sort: priority tags first, unique sources first within ties
+    processed.sort(key=lambda d: _priority_rank(d, priority_tags))
 
-    # Group by tag
-    by_tag: dict[str, list[dict]] = {}
-    for doc in processed:
-        for tag in doc["tags"]:
-            by_tag.setdefault(tag, []).append(doc)
-
-    # Remove ignored tags and sort by priority
-    by_tag = {t: v for t, v in by_tag.items() if t not in ignore_tags}
-    sorted_tags = {
-        k: v
-        for k, v in sorted(
-            by_tag.items(),
-            key=lambda item: (
-                priority_tags.index(item[0]) if item[0] in priority_tags else len(priority_tags),
-                item[0],
-            ),
+    # Cap and warn if truncated
+    if len(processed) > max_articles:
+        logger.warning(
+            "Capping articles at %d (have %d). Increase --max-articles to include more.",
+            max_articles,
+            len(processed),
         )
-    }
+        processed = processed[:max_articles]
 
-    return sorted_tags
+    logger.info("%d articles selected for summary", len(processed))
+    return processed
 
 
-def generate_html_summary(
-    sorted_tags: dict[str, list[dict]],
-    model: str = OPENAI_MODEL,
-) -> str:
-    """Call OpenAI for each tag group and return a complete HTML document."""
-    total_segments = len(sorted_tags)
-    content_parts: list[str] = []
-    previous_segment = ""
+def generate_html_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:
+    """Single OpenAI call → complete HTML document."""
+    from .taste_profile import render_prompt  # imported here so missing-file errors surface at call time
 
-    for index, (tag, docs) in enumerate(sorted_tags.items(), start=1):
-        logger.info("Generating segment %d/%d: %s (%d articles)", index, total_segments, tag, len(docs))
+    rendered = render_prompt(
+        n_articles=len(docs),
+        articles_json=json.dumps(docs, ensure_ascii=False, indent=2),
+    )
 
-        segment_header = (
-            f"\n<h1>Segment: {tag}</h1>"
-            f"<p><i>Based on {len(docs)} articles</i>.</p>\n"
-        )
+    logger.info("Sending %d articles to %s", len(docs), model)
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": rendered}],
+    )
 
-        article_data = [
-            {
-                "title": d["title"],
-                "author": d["author"],
-                "tags": d["tags"],
-                "summary": d["summary"],
-                "site_name": d["site_name"],
-                "source_url": d.get("source_url"),
-                "image_url": d.get("image_url"),
-                "published_date": d.get("published_date"),
-                "number_from_this_site": d.get("number_from_this_site"),
-            }
-            for d in docs
-        ]
-
-        prompt = html_segment_prompt(
-            tag=tag,
-            index=index,
-            total_segments=total_segments,
-            articles=article_data,
-            previous_segment=previous_segment,
-            segment_header=segment_header,
-        )
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        segment = segment_header + response.choices[0].message.content
-        content_parts.append(segment)
-        previous_segment = segment
-
-    body = "".join(content_parts)
+    body = response.choices[0].message.content
     return f"<html><body>{body}</body></html>"
 
 
