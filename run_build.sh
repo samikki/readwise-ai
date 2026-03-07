@@ -13,6 +13,6 @@ if [ ! -f "venv/bin/python" ]; then
 fi
 
 # Delete log files older than 14 days
-find logs -name "build-*.log" -mtime +14 -delete 2>/dev/null || true
+find logs -type f -name "build-*.log" -mtime +14 -delete 2>/dev/null || true
 
 exec venv/bin/python build.py "$@"
