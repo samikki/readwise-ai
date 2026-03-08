@@ -101,12 +101,15 @@ def generate_html_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:
     return f"<html><body>{body}</body></html>"
 
 
+SUMMARY_URL_PREFIX = "https://pinseri.fi/readwise-ai/summary/"
+
+
 def build_readwise_payload(html: str, source: str) -> dict:
     """Wrap generated HTML in the Readwise save API payload."""
     timestamp = datetime.now().isoformat()
     date_title = timestamp[:10].replace("-", ".")
     return {
-        "url": f"https://example.com/summary{timestamp}",
+        "url": f"{SUMMARY_URL_PREFIX}{timestamp}",
         "title": f"Feed summary on {date_title} from {source}",
         "should_clean_html": False,
         "html": html,

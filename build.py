@@ -13,7 +13,7 @@ from readwise_ai.config import (
     SUMMARY_RETENTION_DAYS,
 )
 from readwise_ai.readwise import delete_document, fetch_documents, save_document
-from readwise_ai.summariser import build_readwise_payload, filter_and_prioritise, generate_html_summary
+from readwise_ai.summariser import SUMMARY_URL_PREFIX, build_readwise_payload, filter_and_prioritise, generate_html_summary
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -83,7 +83,8 @@ def _fetch_all_sources(sources: list[str], updated_after: str) -> list[dict]:
 def _cleanup_old_summaries(retention_days: int) -> int:
     """Delete AI-generated summaries older than retention_days from Readwise.
 
-    Identifies summaries by the 'Summary' tag (set by build_readwise_payload).
+    Identifies summaries by the URL prefix (pinseri.fi/readwise-ai/summary/)
+    which is unique to this script and cannot collide with user content.
     Returns the number of documents deleted.
     """
     cutoff = datetime.now() - timedelta(days=retention_days)
@@ -94,14 +95,9 @@ def _cleanup_old_summaries(retention_days: int) -> int:
 
     deleted = 0
     for doc in docs:
-        # Identify summaries by tag
-        raw_tags = doc.get("tags", {})
-        if isinstance(raw_tags, dict):
-            tag_names = [v["name"] for v in raw_tags.values()]
-        else:
-            tag_names = list(raw_tags)
-
-        if "Summary" not in tag_names:
+        # Only touch documents created by this script (identified by URL prefix)
+        source_url = doc.get("source_url") or doc.get("url") or ""
+        if not source_url.startswith(SUMMARY_URL_PREFIX):
             continue
 
         # Check published date
