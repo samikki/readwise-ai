@@ -18,9 +18,7 @@ max_articles = 100
 summary_retention_days = 7
 
 [tags]
-# Articles with these tags are surfaced first (order matters: index 0 = highest priority)
-priority = ["Local", "AI", "Technology"]
-# Articles tagged with any of these are excluded entirely
+# Articles tagged with any of these are excluded entirely from the briefing
 ignore = ["Summary"]
 
 [output]

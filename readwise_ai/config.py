@@ -22,7 +22,6 @@ DEFAULT_SOURCES: list[str] = _cfg["fetch"]["sources"]
 DEFAULT_MAX_ARTICLES: int = _cfg["fetch"]["max_articles"]
 SUMMARY_RETENTION_DAYS: int = _cfg["fetch"]["summary_retention_days"]
 
-PRIORITY_TAGS: list[str] = _cfg["tags"]["priority"]
 IGNORE_TAGS: list[str] = _cfg["tags"]["ignore"]
 
 OUTPUT_LANGUAGE: str = _cfg["output"]["language"]
