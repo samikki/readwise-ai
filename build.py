@@ -6,8 +6,13 @@ import logging
 import sys
 from datetime import datetime, timedelta
 
-from readwise_ai.config import DEFAULT_DAYS, DEFAULT_MAX_ARTICLES, DEFAULT_SOURCES
-from readwise_ai.readwise import fetch_documents, save_document
+from readwise_ai.config import (
+    DEFAULT_DAYS,
+    DEFAULT_MAX_ARTICLES,
+    DEFAULT_SOURCES,
+    SUMMARY_RETENTION_DAYS,
+)
+from readwise_ai.readwise import delete_document, fetch_documents, save_document
 from readwise_ai.summariser import build_readwise_payload, filter_and_prioritise, generate_html_summary
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -75,8 +80,58 @@ def _fetch_all_sources(sources: list[str], updated_after: str) -> list[dict]:
     return all_docs
 
 
+def _cleanup_old_summaries(retention_days: int) -> int:
+    """Delete AI-generated summaries older than retention_days from Readwise.
+
+    Identifies summaries by the 'Summary' tag (set by build_readwise_payload).
+    Returns the number of documents deleted.
+    """
+    cutoff = datetime.now() - timedelta(days=retention_days)
+
+    # Fetch documents from the last 60 days to find candidates — bounded search
+    search_after = (datetime.now() - timedelta(days=60)).isoformat()
+    docs = fetch_documents(updated_after=search_after)
+
+    deleted = 0
+    for doc in docs:
+        # Identify summaries by tag
+        raw_tags = doc.get("tags", {})
+        if isinstance(raw_tags, dict):
+            tag_names = [v["name"] for v in raw_tags.values()]
+        else:
+            tag_names = list(raw_tags)
+
+        if "Summary" not in tag_names:
+            continue
+
+        # Check published date
+        published = doc.get("published_date") or doc.get("created_at") or ""
+        if not published:
+            continue
+
+        try:
+            # Handle both timezone-aware and naive ISO timestamps
+            pub_str = published.replace("Z", "+00:00")
+            pub_dt = datetime.fromisoformat(pub_str).replace(tzinfo=None)
+            if pub_dt < cutoff:
+                doc_id = doc.get("id", "")
+                title = doc.get("title", "(untitled)")
+                if doc_id and delete_document(doc_id):
+                    logger.info("Cleaned up old summary: %s (%s)", title, published[:10])
+                    deleted += 1
+        except (ValueError, KeyError):
+            continue
+
+    if deleted:
+        logger.info("Deleted %d old summaries (retention: %d days)", deleted, retention_days)
+    return deleted
+
+
 def main() -> None:
     args = parse_args()
+
+    # Clean up old summaries before generating a new one
+    _cleanup_old_summaries(SUMMARY_RETENTION_DAYS)
 
     updated_after = (datetime.now() - timedelta(days=args.days)).isoformat()
     raw_docs = _fetch_all_sources(args.sources, updated_after)

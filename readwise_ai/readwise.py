@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 _LIST_URL = "https://readwise.io/api/v3/list/"
 _SAVE_URL = "https://readwise.io/api/v3/save/"
+_DELETE_URL = "https://readwise.io/api/v3/delete/"
 _MAX_RETRIES = 5
 
 
@@ -80,4 +81,17 @@ def save_document(content: dict) -> bool:
         logger.info("Saved document: %s", content.get("title"))
         return True
     logger.error("Failed to save: %d %s", response.status_code, response.text)
+    return False
+
+
+def delete_document(doc_id: str) -> bool:
+    """Delete a document from Readwise Reader by ID. Returns True on success."""
+    response = requests.delete(
+        url=f"{_DELETE_URL}{doc_id}/",
+        headers={"Authorization": f"Token {READWISE_TOKEN}"},
+    )
+    if response.status_code in (200, 204):
+        logger.info("Deleted document: %s", doc_id)
+        return True
+    logger.error("Failed to delete %s: %d %s", doc_id, response.status_code, response.text)
     return False
