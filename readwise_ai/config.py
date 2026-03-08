@@ -18,7 +18,7 @@ with _CONFIG_PATH.open("rb") as _f:
 OPENAI_MODEL: str = _cfg["openai"]["model"]
 
 DEFAULT_DAYS: int = _cfg["fetch"]["days"]
-DEFAULT_SOURCE: str = _cfg["fetch"]["source"]
+DEFAULT_SOURCES: list[str] = _cfg["fetch"]["sources"]
 DEFAULT_MAX_ARTICLES: int = _cfg["fetch"]["max_articles"]
 
 PRIORITY_TAGS: list[str] = _cfg["tags"]["priority"]

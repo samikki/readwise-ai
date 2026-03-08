@@ -35,8 +35,8 @@ def filter_and_prioritise(
 
     Returns a flat deduped list — one entry per article, no duplication across tags.
     """
-    # Drop already-read items
-    docs = [d for d in raw_docs if d.get("reading_progress", 0) < 2]
+    # Drop fully-read items (reading_progress is 0.0–1.0)
+    docs = [d for d in raw_docs if d.get("reading_progress", 0) < 1.0]
 
     # Count articles per site for the unique-source signal
     site_count: dict[str, int] = {}
