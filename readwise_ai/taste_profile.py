@@ -31,7 +31,7 @@ def load_template() -> str:
     return _TEMPLATE_PATH.read_text(encoding="utf-8")
 
 
-def render_prompt(*, n_articles: int, articles_json: str) -> str:
+def render_prompt(*, n_articles: int, articles_json: str, language: str) -> str:
     """Load profile + template from disk and render the final prompt."""
     local = load_local_profile()
     local_block = f"\n\n---\n\n{local}" if local else ""
@@ -40,4 +40,5 @@ def render_prompt(*, n_articles: int, articles_json: str) -> str:
         local_profile=local_block,
         n_articles=n_articles,
         articles_json=articles_json,
+        language=language,
     )

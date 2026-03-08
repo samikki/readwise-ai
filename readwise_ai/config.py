@@ -25,4 +25,6 @@ SUMMARY_RETENTION_DAYS: int = _cfg["fetch"]["summary_retention_days"]
 PRIORITY_TAGS: list[str] = _cfg["tags"]["priority"]
 IGNORE_TAGS: list[str] = _cfg["tags"]["ignore"]
 
+OUTPUT_LANGUAGE: str = _cfg["output"]["language"]
+
 TASTE_PROFILE_SOURCE: str = _cfg["profile"]["source"]

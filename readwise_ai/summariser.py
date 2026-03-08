@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 
-from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, PRIORITY_TAGS
+from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, OUTPUT_LANGUAGE
 from .openai_client import client
 
 logger = logging.getLogger(__name__)
@@ -14,39 +14,19 @@ def _normalise_tags(raw_tags: dict | list) -> list[str]:
     return list(raw_tags)
 
 
-def _priority_rank(doc: dict, priority_tags: list[str]) -> tuple[int, int]:
-    """Sort key: (lowest priority tag index, unique-source flag inverted)."""
-    tags = doc.get("tags", [])
-    tag_rank = min(
-        (priority_tags.index(t) for t in tags if t in priority_tags),
-        default=len(priority_tags),
-    )
-    unique_source = 0 if doc.get("number_from_this_site", 1) == 1 else 1
-    return (tag_rank, unique_source)
-
-
 def filter_and_prioritise(
     raw_docs: list[dict],
     ignore_tags: list[str] = IGNORE_TAGS,
-    priority_tags: list[str] = PRIORITY_TAGS,
     max_articles: int = DEFAULT_MAX_ARTICLES,
 ) -> list[dict]:
-    """Filter unread docs, normalise tags, sort by priority, cap at max_articles.
+    """Filter ignored tags and cap at max_articles.
 
-    Returns a flat deduped list — one entry per article, no duplication across tags.
+    All articles from the timeframe are included regardless of read status.
+    Ordering and priority is fully delegated to the AI model via the
+    taste profile and local profile.
     """
-    # Drop fully-read items (reading_progress is 0.0–1.0)
-    docs = [d for d in raw_docs if d.get("reading_progress", 0) < 1.0]
-
-    # Count articles per site for the unique-source signal
-    site_count: dict[str, int] = {}
-    for doc in docs:
-        site = doc.get("site_name") or ""
-        site_count[site] = site_count.get(site, 0) + 1
-
-    # Normalise tags and filter ignored
     processed: list[dict] = []
-    for doc in docs:
+    for doc in raw_docs:
         tags = _normalise_tags(doc.get("tags", {}))
         if any(t in ignore_tags for t in tags):
             continue
@@ -62,14 +42,9 @@ def filter_and_prioritise(
                 "site_name": doc.get("site_name"),
                 "source_url": doc.get("source_url"),
                 "published_date": doc.get("published_date"),
-                "number_from_this_site": site_count.get(doc.get("site_name") or "", 1),
             }
         )
 
-    # Sort: priority tags first, unique sources first within ties
-    processed.sort(key=lambda d: _priority_rank(d, priority_tags))
-
-    # Cap and warn if truncated
     if len(processed) > max_articles:
         logger.warning(
             "Capping articles at %d (have %d). Increase --max-articles to include more.",
@@ -89,6 +64,7 @@ def generate_html_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:
     rendered = render_prompt(
         n_articles=len(docs),
         articles_json=json.dumps(docs, ensure_ascii=False, indent=2),
+        language=OUTPUT_LANGUAGE,
     )
 
     logger.info("Sending %d articles to %s", len(docs), model)

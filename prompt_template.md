@@ -9,8 +9,8 @@ $taste_profile$local_profile
 
 ## Your task
 
-Write a single coherent article — approximately 10 minutes to read, around 1500–2000 words.
-You have $n_articles articles to work with.
+Write a single coherent article in **$language** — approximately 10 minutes to read, around 1500–2000 words.
+You have $n_articles articles to work with. The source articles may be in any language; always write the output in $language regardless.
 
 **Coverage rules:**
 
