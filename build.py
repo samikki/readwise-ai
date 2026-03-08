@@ -11,9 +11,10 @@ from readwise_ai.config import (
     DEFAULT_MAX_ARTICLES,
     DEFAULT_SOURCES,
     SUMMARY_RETENTION_DAYS,
+    SUMMARY_URL_PREFIX,
 )
 from readwise_ai.readwise import delete_document, fetch_documents, save_document
-from readwise_ai.summariser import SUMMARY_URL_PREFIX, build_readwise_payload, filter_and_prioritise, generate_html_summary
+from readwise_ai.summariser import build_readwise_payload, filter_and_prioritise, generate_html_summary
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ def _fetch_all_sources(sources: list[str], updated_after: str) -> list[dict]:
 def _cleanup_old_summaries(retention_days: int) -> int:
     """Delete AI-generated summaries older than retention_days from Readwise.
 
-    Identifies summaries by the URL prefix (pinseri.fi/readwise-ai/summary/)
+    Identifies summaries by the summary_url_prefix set in config.toml,
     which is unique to this script and cannot collide with user content.
     Returns the number of documents deleted.
     """

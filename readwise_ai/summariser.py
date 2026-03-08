@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 
-from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, OUTPUT_LANGUAGE
+from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, OUTPUT_LANGUAGE, READER_NAME, SUMMARY_URL_PREFIX
 from .openai_client import client
 
 logger = logging.getLogger(__name__)
@@ -77,16 +77,13 @@ def generate_html_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:
     return f"<html><body>{body}</body></html>"
 
 
-SUMMARY_URL_PREFIX = "https://pinseri.fi/readwise-ai/summary/"
-
-
 def build_readwise_payload(html: str, source: str) -> dict:
     """Wrap generated HTML in the Readwise save API payload."""
     timestamp = datetime.now().isoformat()
     date_title = timestamp[:10].replace("-", ".")
     return {
         "url": f"{SUMMARY_URL_PREFIX}{timestamp}",
-        "title": f"Feed summary on {date_title} from {source}",
+        "title": f"{READER_NAME}'s briefing on {date_title} from {source}",
         "should_clean_html": False,
         "html": html,
         "tags": ["Summary"],

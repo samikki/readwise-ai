@@ -1,34 +1,23 @@
 # readwise-ai — Claude Code Instructions
 
-This project is an AI-powered Readwise summary generator. It fetches articles from Readwise Reader, groups them by tag, generates summaries using an LLM, and saves them back to Readwise.
-
-## Owner
-
-Sami (user@example.com). See `docs/plan.md` for the full refactoring roadmap.
-
-## Current state
-
-Two monolithic Python scripts (`build-txt.py`, `test-build-txt.py`) that work but need significant modernisation. See `docs/plan.md` for details.
-
-## Goal
-
-Refactor into a clean, modular codebase, set up GitHub, and integrate Sami's personal taste profile so summaries are framed through his specific intellectual lens rather than generic AI output.
-
-## Taste profile
-
-Sami's full taste profile is at:
-`/path/to/your/taste_profile_source.md`
-
-Read this before working on any prompt engineering tasks. The summary version: systems thinker, rationalist, AI practitioner (skeptical not credulous), Finnish, reads deeply, via negativa orientation, appreciates wit and directness.
+This project is an AI-powered Readwise summary generator. It fetches articles from Readwise Reader, generates a daily briefing article using an LLM shaped by a personal taste profile, and saves the result back to Readwise.
 
 ## Key rules
 
 - Never commit `.env` or any API keys
+- Never commit `taste_profile.md` or `local_profile.md` — these are personal and gitignored
 - Use `python-dotenv` for all secrets
 - All new code should have type hints
-- Use `loguru` or standard `logging` — no bare `print()` in production code
+- Use standard `logging` — no bare `print()` in production code
 - Target Python 3.11+
+
+## Configuration
+
+- Secrets go in `.env` (see `.env.example`)
+- User-editable settings go in `config.toml`
+- The taste profile lives in `taste_profile.md` (gitignored, copy from `taste_profile.example.md`)
+- The local addendum lives in `local_profile.md` (gitignored, copy from `local_profile.example.md`)
 
 ## Docs
 
-- `docs/plan.md` — full refactoring and feature roadmap
+- `docs/plan.md` — refactoring and feature roadmap
