@@ -1,5 +1,6 @@
 .env
-# Personal profile files — copy from *.example.md and customise
+# Personal config and profile files — copy from *.example.* and customise
+config.toml
 taste_profile.md
 local_profile.md
 __pycache__/
