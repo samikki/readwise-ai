@@ -1,4 +1,6 @@
 .env
+CLAUDE.md
+archive/
 # Personal config and profile files — copy from *.example.* and customise
 config.toml
 taste_profile.md
