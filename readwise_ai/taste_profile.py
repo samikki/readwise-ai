@@ -31,11 +31,26 @@ def load_template() -> str:
     return _TEMPLATE_PATH.read_text(encoding="utf-8")
 
 
-def render_prompt(*, n_articles: int, articles_json: str, language: str) -> str:
-    """Load profile + template from disk and render the final prompt."""
+def render_prompt(
+    *,
+    n_articles: int,
+    articles_json: str,
+    language: str,
+    template_path: Path | None = None,
+) -> str:
+    """Load profile + template from disk and render the final prompt.
+
+    Args:
+        template_path: Override the default prompt template. When None,
+            uses prompt_template.md (existing behaviour).
+    """
     local = load_local_profile()
     local_block = f"\n\n---\n\n{local}" if local else ""
-    return Template(load_template()).substitute(
+    path = template_path or _TEMPLATE_PATH
+    if not path.exists():
+        raise FileNotFoundError(f"{path} not found")
+    template_text = path.read_text(encoding="utf-8")
+    return Template(template_text).substitute(
         taste_profile=load_profile(),
         local_profile=local_block,
         n_articles=n_articles,

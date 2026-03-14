@@ -29,3 +29,11 @@ SUMMARY_URL_PREFIX: str = _cfg["output"]["summary_url_prefix"]
 
 READER_NAME: str = _cfg["profile"]["name"]
 TASTE_PROFILE_SOURCE: str = _cfg["profile"]["source"]
+
+# --- Watch summary settings (optional section, safe defaults) ---
+_watch = _cfg.get("watch", {})
+WATCH_HOURS: int = _watch.get("hours", 6)
+WATCH_MAX_WORDS: int = _watch.get("max_words", 200)
+WATCH_TAG: str = _watch.get("tag", "WatchSummary")
+WATCH_URL_PREFIX: str = _watch.get("watch_url_prefix", "https://pinseri.fi/readwise-ai/watch/")
+WATCH_KEEP: int = _watch.get("keep", 3)
