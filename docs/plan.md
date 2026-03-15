@@ -33,12 +33,15 @@ readwise-ai/
 │   ├── openai_client.py   # OpenAI wrapper
 │   ├── summariser.py      # Core summarisation logic
 │   └── taste_profile.py   # Profile loader and prompt renderer
-├── build.py               # Entry point: HTML summary
+├── templates/
+│   ├── prompt_template.md       # Main briefing prompt with $variables
+│   └── watch_prompt_template.md # Short watch summary prompt
+├── build.py               # Entry point: full briefing or watch summary
 ├── sync_profile.py        # Sync taste_profile.md from an external source
+├── debug_fetch.py         # Diagnostic: show what articles would be fetched
 ├── config.toml            # User-editable settings
 ├── taste_profile.example.md
 ├── local_profile.example.md
-├── prompt_template.md     # Prompt template with $variables
 ├── docs/
 │   └── plan.md
 ├── .env.example

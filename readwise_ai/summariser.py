@@ -113,7 +113,7 @@ def build_readwise_payload(html: str, source: str) -> dict:
 
 # --- Watch summary (short, glanceable) ---
 
-_WATCH_TEMPLATE_PATH = Path(__file__).parent.parent / "watch_prompt_template.md"
+_WATCH_TEMPLATE_PATH = Path(__file__).parent.parent / "templates" / "watch_prompt_template.md"
 
 
 def generate_watch_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:

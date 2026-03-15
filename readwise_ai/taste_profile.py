@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 _PROFILE_PATH = Path("taste_profile.md")
 _LOCAL_PROFILE_PATH = Path("local_profile.md")
-_TEMPLATE_PATH = Path("prompt_template.md")
+_TEMPLATE_PATH = Path("templates/prompt_template.md")
 
 
 def load_profile() -> str:
@@ -42,7 +42,7 @@ def render_prompt(
 
     Args:
         template_path: Override the default prompt template. When None,
-            uses prompt_template.md (existing behaviour).
+            uses templates/prompt_template.md (existing behaviour).
     """
     local = load_local_profile()
     local_block = f"\n\n---\n\n{local}" if local else ""

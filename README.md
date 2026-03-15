@@ -238,8 +238,8 @@ chmod +x run_build.sh run_watch.sh
 | `taste_profile.example.md` | Yes | Template and instructions |
 | `local_profile.md` | No | Optional local/contextual priorities — never committed |
 | `local_profile.example.md` | Yes | Template and instructions |
-| `prompt_template.md` | Yes | Prompt template for the daily briefing |
-| `watch_prompt_template.md` | Yes | Prompt template for the watch summary |
+| `templates/prompt_template.md` | Yes | Prompt template for the daily briefing |
+| `templates/watch_prompt_template.md` | Yes | Prompt template for the watch summary |
 | `build.py` | Yes | Main entry point |
 | `run_build.sh` | Yes | Shell wrapper for cron |
 | `run_watch.sh` | Yes | Shell wrapper for watch summary cron |
