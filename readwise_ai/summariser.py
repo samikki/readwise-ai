@@ -16,6 +16,20 @@ def _normalise_tags(raw_tags: dict | list) -> list[str]:
     return list(raw_tags)
 
 
+def _sanitise_text(value: str | None) -> str | None:
+    """Remove lone Unicode surrogates that produce invalid UTF-8 / broken JSON.
+
+    Python's json.dumps(ensure_ascii=False) passes lone surrogates through
+    as-is, but they are not valid UTF-8. When included in an HTTP request body
+    this causes OpenAI to return 400 "could not parse JSON body".
+    """
+    if value is None:
+        return None
+    # encode with 'surrogatepass' to accept surrogates, then decode with
+    # 'replace' to substitute them with the Unicode replacement character U+FFFD.
+    return value.encode("utf-8", errors="surrogatepass").decode("utf-8", errors="replace")
+
+
 def filter_and_prioritise(
     raw_docs: list[dict],
     ignore_tags: list[str] = IGNORE_TAGS,
@@ -37,11 +51,11 @@ def filter_and_prioritise(
             {
                 "id": doc_id,
                 "readwise_url": f"https://read.readwise.io/read/{doc_id}" if doc_id else None,
-                "title": doc.get("title"),
-                "author": doc.get("author"),
+                "title": _sanitise_text(doc.get("title")),
+                "author": _sanitise_text(doc.get("author")),
                 "tags": tags,
-                "summary": doc.get("summary"),
-                "site_name": doc.get("site_name"),
+                "summary": _sanitise_text(doc.get("summary")),
+                "site_name": _sanitise_text(doc.get("site_name")),
                 "source_url": doc.get("source_url"),
                 "published_date": doc.get("published_date"),
             }

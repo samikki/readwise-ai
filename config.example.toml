@@ -4,7 +4,7 @@
 # Secrets (API tokens) go in .env, not here.
 
 [openai]
-model = "gpt-4o"
+model = "gpt-4o"  # replace with your preferred model — see README for guidance
 
 [fetch]
 # How many days back to fetch articles (1 = last 24 hours)

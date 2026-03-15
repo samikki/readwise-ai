@@ -224,19 +224,17 @@ def _run_summary(args: argparse.Namespace) -> None:
 
 def _run_watch(args: argparse.Namespace) -> None:
     """Generate a short watch summary."""
-    _cleanup_keep_latest(url_prefix=WATCH_URL_PREFIX, keep=WATCH_KEEP)
-
     updated_after = (datetime.now() - timedelta(hours=WATCH_HOURS)).isoformat()
     raw_docs = _fetch_all_sources(args.sources, updated_after)
 
     if not raw_docs:
-        logger.warning("No documents fetched — nothing to summarise for watch.")
+        logger.info("No documents fetched for the watch window — skipping summary and upload.")
         sys.exit(0)
 
     docs = filter_and_prioritise(raw_docs, max_articles=args.max_articles)
 
     if not docs:
-        logger.warning("No articles remain after filtering.")
+        logger.info("No articles remain after filtering — skipping summary and upload.")
         sys.exit(0)
 
     text = generate_watch_summary(docs)
@@ -250,6 +248,9 @@ def _run_watch(args: argparse.Namespace) -> None:
         logger.info("Dry run — skipping Readwise upload.")
         print(text)
         return
+
+    # Clean up old summaries only once we have a new one ready to replace them
+    _cleanup_keep_latest(url_prefix=WATCH_URL_PREFIX, keep=WATCH_KEEP)
 
     source_label = "+".join(args.sources)
     payload = build_watch_payload(text, source_label)

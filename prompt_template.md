@@ -45,7 +45,7 @@ Use:
 - `<h3>` for sub-sections if needed
 - `<p>`, `<ul>`, `<li>`, `<strong>`, `<a>` for content
 - Links integrated naturally in text (not "click here" — use the topic as link text)
-- For article links, use the `readwise_url` field (e.g. `https://read.readwise.io/read/{id}`) so they open directly in Readwise Reader. Fall back to `source_url` only if `readwise_url` is absent.
+- For article links, use the `source_url` field so they open the original article. Fall back to `readwise_url` only if `source_url` is absent.
 - No code fences
 - No images
 - All tags properly closed
