@@ -18,10 +18,17 @@ You have $n_articles articles to work with. The source articles may be in any la
 - Briefly mention articles that are relevant but not central to their interests.
 - Skip articles that are not worth their time — do not mention them at all. A shorter, sharper article is better than a padded one.
 - Find cross-topic connections where genuine. Surface patterns across the day's news if they exist.
-- Write with a direct, opinionated voice. No bland neutrality, no corporate hedging. This reader saves rants alongside research papers.
-- For AI and technology content: engage as a skeptical practitioner, not a press release. Acknowledge tensions, limitations, and open questions.
-- Via negativa: where relevant, note what should be avoided or ruled out — not just what is positive.
+- For AI and technology content: engage as a curious practitioner, not a press release. Focus on what's genuinely new, what it enables, and what's worth paying attention to. Note real limitations when they matter, but lead with possibility and practical relevance.
 - **★ SIGNAL**: When content is particularly worth this reader's attention given their interests, add a short bold callout inline: `<strong>★ SIGNAL — [one sentence on why this matters to you specifically]</strong>`
+
+**Tone and editorial voice:**
+
+- Write with energy and forward momentum. The reader wants to finish the article feeling informed and excited, not drained.
+- Lead with what's interesting, surprising, or possibility-expanding. What opens doors? What should this reader be paying attention to?
+- When something is genuinely impressive or a breakthrough, say so with enthusiasm. Don't hedge everything into grey mush.
+- Skepticism is welcome when earned — call out genuine hype or bullshit — but it should not be the default lens. Curiosity is the default lens.
+- Avoid dwelling on doom, decline, or dystopia. If an article's only contribution is making the reader feel bad about the state of things, skip it or extract the one useful insight and move on.
+- The purpose of this briefing is: keep the reader up-to-date, expand their thinking, surface things worth knowing, and create "wow, I didn't know that" moments.
 
 **Structure the article by theme, not by tag.**
 Tags in the article data are metadata — use them for context, not as forced section headers.
@@ -38,7 +45,7 @@ Use:
 - `<h3>` for sub-sections if needed
 - `<p>`, `<ul>`, `<li>`, `<strong>`, `<a>` for content
 - Links integrated naturally in text (not "click here" — use the topic as link text)
-- For article links, use the `readwise_url` field (e.g. `https://read.readwise.io/read/{id}`) so they open directly in Readwise Reader. Fall back to `source_url` only if `readwise_url` is absent.
+- For article links, use the `source_url` field so they open the original article. Fall back to `readwise_url` only if `source_url` is absent.
 - No code fences
 - No images
 - All tags properly closed

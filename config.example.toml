@@ -4,7 +4,7 @@
 # Secrets (API tokens) go in .env, not here.
 
 [openai]
-model = "gpt-4o"
+model = "gpt-4o"  # replace with your preferred model — see README for guidance
 
 [fetch]
 # How many days back to fetch articles (1 = last 24 hours)
@@ -19,7 +19,7 @@ summary_retention_days = 7
 
 [tags]
 # Articles tagged with any of these are excluded entirely from the briefing
-ignore = ["Summary"]
+ignore = ["Summary", "WatchSummary"]
 
 [output]
 # Language for the generated summary
@@ -28,6 +28,16 @@ language = "English"
 # Use a URL on a domain you own — this is stored in Readwise as the article URL.
 # Must end with a slash.
 summary_url_prefix = "https://yourdomain.com/readwise-ai/summary/"
+
+[watch]
+# How many hours back to look for the watch summary
+hours = 6
+# Maximum word count target for the watch summary
+max_words = 200
+# Tag used to identify watch summaries in Readwise
+tag = "WatchSummary"
+# URL prefix for watch summaries (distinct from long summary prefix)
+watch_url_prefix = "https://yourdomain.com/readwise-ai/watch/"
 
 [profile]
 # Your name — used in summary titles
