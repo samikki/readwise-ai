@@ -38,7 +38,6 @@ readwise-ai/
 │   └── watch_prompt_template.md # Short watch summary prompt
 ├── build.py               # Entry point: full briefing or watch summary
 ├── sync_profile.py        # Sync taste_profile.md from an external source
-├── debug_fetch.py         # Diagnostic: show what articles would be fetched
 ├── config.toml            # User-editable settings
 ├── taste_profile.example.md
 ├── local_profile.example.md
