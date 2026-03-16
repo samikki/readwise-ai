@@ -16,7 +16,7 @@ from readwise_ai.config import (
     WATCH_KEEP,
     WATCH_URL_PREFIX,
 )
-from readwise_ai.readwise import delete_document, fetch_documents, save_document
+from readwise_ai.readwise import delete_document, fetch_documents, fetch_highlighted_urls, save_document
 from readwise_ai.summariser import (
     build_readwise_payload,
     build_watch_payload,
@@ -100,15 +100,20 @@ def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PR
 
     Identifies summaries by the given url_prefix (defaults to summary_url_prefix
     from config.toml), which is unique to this script and cannot collide with
-    user content. Returns the number of documents deleted.
+    user content. Summaries with highlights are never deleted.
+    Returns the number of documents deleted.
     """
     cutoff = datetime.now() - timedelta(days=retention_days)
+
+    # Fetch highlight counts once up front (v2 API) to protect highlighted summaries
+    highlighted = fetch_highlighted_urls(url_prefix)
 
     # Fetch documents from the last 60 days to find candidates — bounded search
     search_after = (datetime.now() - timedelta(days=60)).isoformat()
     docs = fetch_documents(updated_after=search_after)
 
     deleted = 0
+    preserved = 0
     for doc in docs:
         # Only touch documents created by this script (identified by URL prefix)
         source_url = doc.get("source_url") or doc.get("url") or ""
@@ -125,14 +130,23 @@ def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PR
             pub_str = published.replace("Z", "+00:00")
             pub_dt = datetime.fromisoformat(pub_str).replace(tzinfo=None)
             if pub_dt < cutoff:
-                doc_id = doc.get("id", "")
                 title = doc.get("title", "(untitled)")
+
+                # Never delete summaries the user has highlighted
+                if source_url in highlighted:
+                    logger.info("Preserving highlighted summary: %s (%s)", title, published[:10])
+                    preserved += 1
+                    continue
+
+                doc_id = doc.get("id", "")
                 if doc_id and delete_document(doc_id):
                     logger.info("Cleaned up old summary: %s (%s)", title, published[:10])
                     deleted += 1
         except (ValueError, KeyError):
             continue
 
+    if preserved:
+        logger.info("Preserved %d highlighted summaries from deletion", preserved)
     if deleted:
         logger.info("Deleted %d old summaries (retention: %d days)", deleted, retention_days)
     return deleted
@@ -142,13 +156,17 @@ def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
     """Delete all but the N most recent documents matching url_prefix.
 
     Identifies documents by URL prefix, sorts by published/created date,
-    keeps the newest `keep` and deletes the rest. Returns count deleted.
+    keeps the newest `keep` and deletes the rest. Summaries with highlights
+    are never deleted. Returns count deleted.
     """
+    # Fetch highlight counts once up front (v2 API)
+    highlighted = fetch_highlighted_urls(url_prefix)
+
     search_after = (datetime.now() - timedelta(days=60)).isoformat()
     docs = fetch_documents(updated_after=search_after)
 
     # Find matching documents with their dates
-    candidates: list[tuple[str, str, str]] = []  # (date_str, doc_id, title)
+    candidates: list[tuple[str, str, str, str]] = []  # (date_str, doc_id, title, source_url)
     for doc in docs:
         source_url = doc.get("source_url") or doc.get("url") or ""
         if not source_url.startswith(url_prefix):
@@ -158,7 +176,7 @@ def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
             continue
         date_str = doc.get("created_at") or doc.get("published_date") or ""
         title = doc.get("title", "(untitled)")
-        candidates.append((date_str, doc_id, title))
+        candidates.append((date_str, doc_id, title, source_url))
 
     if len(candidates) <= keep:
         return 0
@@ -168,11 +186,18 @@ def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
     to_delete = candidates[keep:]
 
     deleted = 0
-    for date_str, doc_id, title in to_delete:
+    preserved = 0
+    for date_str, doc_id, title, source_url in to_delete:
+        if source_url in highlighted:
+            logger.info("Preserving highlighted watch summary: %s", title)
+            preserved += 1
+            continue
         if delete_document(doc_id):
             logger.info("Cleaned up old watch summary: %s", title)
             deleted += 1
 
+    if preserved:
+        logger.info("Preserved %d highlighted watch summaries from deletion", preserved)
     if deleted:
         logger.info("Deleted %d old watch summaries (keeping %d latest)", deleted, keep)
     return deleted

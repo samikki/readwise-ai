@@ -84,6 +84,37 @@ def save_document(content: dict) -> bool:
     return False
 
 
+_BOOKS_URL = "https://readwise.io/api/v2/books/"
+
+
+def fetch_highlighted_urls(url_prefix: str) -> set[str]:
+    """Return source_urls of documents matching url_prefix that have highlights.
+
+    Uses the Readwise v2 export API which exposes num_highlights per book.
+    """
+    highlighted: set[str] = set()
+    page = 1
+    while True:
+        response = requests.get(
+            url=_BOOKS_URL,
+            headers={"Authorization": f"Token {READWISE_TOKEN}"},
+            params={"page_size": 100, "page": page, "category": "articles"},
+        )
+        if response.status_code != 200:
+            logger.warning("v2 books API error %d — skipping highlight check", response.status_code)
+            return highlighted
+        data = response.json()
+        for book in data.get("results", []):
+            source_url = book.get("source_url") or ""
+            if source_url.startswith(url_prefix) and book.get("num_highlights", 0) > 0:
+                highlighted.add(source_url)
+        if not data.get("next"):
+            break
+        page += 1
+    logger.info("Found %d highlighted summaries matching %s", len(highlighted), url_prefix)
+    return highlighted
+
+
 def delete_document(doc_id: str) -> bool:
     """Delete a document from Readwise Reader by ID. Returns True on success."""
     response = requests.delete(
