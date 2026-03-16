@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Sync taste_profile.md from the Obsidian master file.
-# Run this whenever you update your Obsidian taste profile.
+# Sync taste_profile.md from an external source (configured in config.toml).
+# Run this whenever you update your taste profile at its source location.
 
 set -euo pipefail
 cd "$(dirname "$0")"

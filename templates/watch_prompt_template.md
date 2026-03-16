@@ -8,7 +8,7 @@ $taste_profile$local_profile
 
 ## Your task
 
-Write a concise briefing in **$language** — around 300–400 words, meant to be read in about 2 minutes by scrolling on a small screen.
+Write a concise briefing in **$language** — around 150–200 words, meant to be glanced in about a minute by scrolling on a small screen.
 You have $n_articles articles from the last few hours. The source articles may be in any language; always write in $language.
 
 Rules:

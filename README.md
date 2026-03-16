@@ -1,4 +1,4 @@
-# readwise-ai  ·  v1.1
+# readwise-ai  ·  v1.2
 
 Fetches articles from your [Readwise Reader](https://readwise.io/read) library, generates an AI-powered daily briefing shaped by your personal taste profile, and saves it back to Readwise as an article. Optionally generates a short watch summary (for an Apple Watch companion app).
 
@@ -177,8 +177,8 @@ Customise the taxonomy to your own interests — the example above is generic. O
 # Generate and post to Readwise
 python build.py
 
-# Last 3 days from "new" inbox
-python build.py --days 3 --source new
+# Last 3 days from "new" inbox only
+python build.py --days 3 --sources new
 
 # Dry run — print output, don't post
 python build.py --dry-run
@@ -198,8 +198,8 @@ python build.py --watch
 | Flag | Default | Description |
 |---|---|---|
 | `--days N` | 1 | How many days back to fetch articles |
-| `--source` | `feed` | `feed`, `new`, or `all` |
-| `--max-articles N` | 50 | Max articles to include in the prompt |
+| `--sources` | `feed later` | Readwise Reader locations: `new`, `later`, `shortlist`, `archive`, `feed` |
+| `--max-articles N` | 100 | Max articles to include in the prompt |
 | `--dry-run` | off | Print output without posting to Readwise |
 | `--output FILE` | — | Also save HTML to a local file |
 | `--watch` | off | Generate short watch summary instead |
