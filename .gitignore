@@ -5,6 +5,11 @@ archive/
 config.toml
 taste_profile.md
 local_profile.md
+# Editor backup files — may contain personal content
+*~
+*.bak
+# Local Claude Code state (worktrees, session data)
+.claude/
 __pycache__/
 *.pyc
 *.pyo

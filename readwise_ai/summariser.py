@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pathlib import Path
 
-from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, OUTPUT_LANGUAGE, READER_NAME, SUMMARY_URL_PREFIX, WATCH_TAG, WATCH_URL_PREFIX
+from .config import DEFAULT_MAX_ARTICLES, IGNORE_TAGS, OPENAI_MODEL, OUTPUT_LANGUAGE, READER_NAME, SUMMARY_URL_PREFIX, WATCH_MAX_WORDS, WATCH_TAG, WATCH_URL_PREFIX
 from .openai_client import client
 
 logger = logging.getLogger(__name__)
@@ -125,6 +125,7 @@ def generate_watch_summary(docs: list[dict], model: str = OPENAI_MODEL) -> str:
         articles_json=json.dumps(docs, ensure_ascii=False, indent=2),
         language=OUTPUT_LANGUAGE,
         template_path=_WATCH_TEMPLATE_PATH,
+        max_words=WATCH_MAX_WORDS,
     )
 
     logger.info("Sending %d articles to %s for watch summary", len(docs), model)

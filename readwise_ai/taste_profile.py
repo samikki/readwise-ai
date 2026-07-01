@@ -37,12 +37,16 @@ def render_prompt(
     articles_json: str,
     language: str,
     template_path: Path | None = None,
+    max_words: int | None = None,
 ) -> str:
     """Load profile + template from disk and render the final prompt.
 
     Args:
         template_path: Override the default prompt template. When None,
             uses templates/prompt_template.md (existing behaviour).
+        max_words: Target word count, substituted for $max_words in templates
+            that use it (e.g. the watch template). Templates that omit the
+            placeholder ignore it.
     """
     local = load_local_profile()
     local_block = f"\n\n---\n\n{local}" if local else ""
@@ -56,4 +60,5 @@ def render_prompt(
         n_articles=n_articles,
         articles_json=articles_json,
         language=language,
+        max_words="" if max_words is None else max_words,
     )

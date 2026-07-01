@@ -1,4 +1,4 @@
-# readwise-ai  ·  v1.2
+# readwise-ai  ·  v1.4
 
 Fetches articles from your [Readwise Reader](https://readwise.io/read) library, generates an AI-powered daily briefing shaped by your personal taste profile, and saves it back to Readwise as an article. Optionally generates a short watch summary (for an Apple Watch companion app).
 
