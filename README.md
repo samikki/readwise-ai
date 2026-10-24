@@ -180,7 +180,7 @@ python build.py
 # Last 3 days from "new" inbox only
 python build.py --days 3 --sources new
 
-# Dry run — print output, don't post
+# Dry run — print output, don't post or delete anything
 python build.py --dry-run
 
 # Also save to a local file
@@ -200,7 +200,7 @@ python build.py --watch
 | `--days N` | 1 | How many days back to fetch articles |
 | `--sources` | `feed later` | Readwise Reader locations: `new`, `later`, `shortlist`, `archive`, `feed` |
 | `--max-articles N` | 100 | Max articles to include in the prompt |
-| `--dry-run` | off | Print output without posting to Readwise |
+| `--dry-run` | off | Print output without posting to or deleting from Readwise (logs what cleanup would delete) |
 | `--output FILE` | — | Also save HTML to a local file |
 | `--watch` | off | Generate short watch summary instead |
 

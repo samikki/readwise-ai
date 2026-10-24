@@ -87,24 +87,29 @@ def save_document(content: dict) -> bool:
 _BOOKS_URL = "https://readwise.io/api/v2/books/"
 
 
-def fetch_highlighted_urls(url_prefix: str) -> set[str]:
+def fetch_highlighted_urls(url_prefix: str) -> Optional[set[str]]:
     """Return source_urls of documents matching url_prefix that have highlights.
 
     Uses the Readwise v2 export API which exposes num_highlights per book.
+    Fails closed: returns None if any page cannot be fetched or parsed, so
+    callers can skip cleanup instead of acting on a partial set.
     """
     highlighted: set[str] = set()
     page = 1
     while True:
-        response = requests.get(
-            url=_BOOKS_URL,
-            headers={"Authorization": f"Token {READWISE_TOKEN}"},
-            params={"page_size": 100, "page": page, "category": "articles"},
-        )
-        if response.status_code != 200:
-            logger.warning("v2 books API error %d — skipping highlight check", response.status_code)
-            return highlighted
-        data = response.json()
-        for book in data.get("results", []):
+        try:
+            response = _get_with_retry(
+                _BOOKS_URL, {"page_size": 100, "page": page, "category": "articles"}
+            )
+            if response is None:
+                logger.error("v2 books API failed on page %d — highlight check unavailable", page)
+                return None
+            data = response.json()
+            results = data["results"]
+        except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
+            logger.error("v2 books API failed on page %d (%s) — highlight check unavailable", page, exc)
+            return None
+        for book in results:
             source_url = book.get("source_url") or ""
             if source_url.startswith(url_prefix) and book.get("num_highlights", 0) > 0:
                 highlighted.add(source_url)

@@ -14,11 +14,14 @@ from readwise_ai.config import (
     SUMMARY_URL_PREFIX,
     WATCH_HOURS,
     WATCH_KEEP,
+    WATCH_TAG,
     WATCH_URL_PREFIX,
+    is_valid_url_prefix,
 )
 from readwise_ai.readwise import delete_document, fetch_documents, fetch_highlighted_urls, save_document
 from readwise_ai.summariser import (
     build_readwise_payload,
+    _normalise_tags,
     build_watch_payload,
     filter_and_prioritise,
     generate_html_summary,
@@ -29,6 +32,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 _VALID_SOURCES = ["new", "later", "shortlist", "archive", "feed"]
+
+# Tag applied to full briefings by build_readwise_payload (summariser.py)
+SUMMARY_TAG = "Summary"
 
 
 def parse_args() -> argparse.Namespace:
@@ -57,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Generate summary but do not post to Readwise",
+        help="Generate summary but do not post to or delete from Readwise",
     )
     parser.add_argument(
         "--output",
@@ -95,18 +101,38 @@ def _fetch_all_sources(sources: list[str], updated_after: str) -> list[dict]:
     return all_docs
 
 
-def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PREFIX) -> int:
+def _has_tag(doc: dict, tag: str) -> bool:
+    """Return True if the Reader document carries the given tag."""
+    if not tag:
+        return False
+    return tag in _normalise_tags(doc.get("tags") or {})
+
+
+def _cleanup_old_summaries(
+    retention_days: int,
+    url_prefix: str = SUMMARY_URL_PREFIX,
+    tag: str = SUMMARY_TAG,
+    dry_run: bool = False,
+) -> int:
     """Delete AI-generated summaries older than retention_days from Readwise.
 
     Identifies summaries by the given url_prefix (defaults to summary_url_prefix
-    from config.toml), which is unique to this script and cannot collide with
-    user content. Summaries with highlights are never deleted.
-    Returns the number of documents deleted.
+    from config.toml) AND the summary tag; both must match. Refuses to run if
+    the prefix is invalid or the highlight check fails. Summaries with
+    highlights are never deleted. With dry_run, only logs what would be deleted.
+    Returns the number of documents deleted (or that would be deleted).
     """
+    if not is_valid_url_prefix(url_prefix):
+        logger.warning("Invalid summary URL prefix %r — skipping cleanup", url_prefix)
+        return 0
+
     cutoff = datetime.now() - timedelta(days=retention_days)
 
     # Fetch highlight counts once up front (v2 API) to protect highlighted summaries
     highlighted = fetch_highlighted_urls(url_prefix)
+    if highlighted is None:
+        logger.warning("Highlight check failed — skipping summary cleanup")
+        return 0
 
     # Fetch documents from the last 60 days to find candidates — bounded search
     search_after = (datetime.now() - timedelta(days=60)).isoformat()
@@ -115,9 +141,11 @@ def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PR
     deleted = 0
     preserved = 0
     for doc in docs:
-        # Only touch documents created by this script (identified by URL prefix)
+        # Only touch documents created by this script (identified by URL prefix and tag)
         source_url = doc.get("source_url") or doc.get("url") or ""
         if not source_url.startswith(url_prefix):
+            continue
+        if not _has_tag(doc, tag):
             continue
 
         # Check published date
@@ -139,7 +167,12 @@ def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PR
                     continue
 
                 doc_id = doc.get("id", "")
-                if doc_id and delete_document(doc_id):
+                if not doc_id:
+                    continue
+                if dry_run:
+                    logger.info("Dry run — would delete old summary: %s (%s)", title, published[:10])
+                    deleted += 1
+                elif delete_document(doc_id):
                     logger.info("Cleaned up old summary: %s (%s)", title, published[:10])
                     deleted += 1
         except (ValueError, KeyError):
@@ -148,19 +181,34 @@ def _cleanup_old_summaries(retention_days: int, url_prefix: str = SUMMARY_URL_PR
     if preserved:
         logger.info("Preserved %d highlighted summaries from deletion", preserved)
     if deleted:
-        logger.info("Deleted %d old summaries (retention: %d days)", deleted, retention_days)
+        verb = "Would delete" if dry_run else "Deleted"
+        logger.info("%s %d old summaries (retention: %d days)", verb, deleted, retention_days)
     return deleted
 
 
-def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
-    """Delete all but the N most recent documents matching url_prefix.
+def _cleanup_keep_latest(
+    url_prefix: str,
+    keep: int = 3,
+    tag: str = WATCH_TAG,
+    dry_run: bool = False,
+) -> int:
+    """Delete all but the N most recent documents matching url_prefix and tag.
 
-    Identifies documents by URL prefix, sorts by published/created date,
-    keeps the newest `keep` and deletes the rest. Summaries with highlights
-    are never deleted. Returns count deleted.
+    Identifies documents by URL prefix AND tag, sorts by published/created date,
+    keeps the newest `keep` and deletes the rest. Refuses to run if the prefix
+    is invalid or the highlight check fails. Summaries with highlights are
+    never deleted. With dry_run, only logs what would be deleted.
+    Returns count deleted (or that would be deleted).
     """
+    if not is_valid_url_prefix(url_prefix):
+        logger.warning("Invalid watch URL prefix %r — skipping cleanup", url_prefix)
+        return 0
+
     # Fetch highlight counts once up front (v2 API)
     highlighted = fetch_highlighted_urls(url_prefix)
+    if highlighted is None:
+        logger.warning("Highlight check failed — skipping watch cleanup")
+        return 0
 
     search_after = (datetime.now() - timedelta(days=60)).isoformat()
     docs = fetch_documents(updated_after=search_after)
@@ -170,6 +218,8 @@ def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
     for doc in docs:
         source_url = doc.get("source_url") or doc.get("url") or ""
         if not source_url.startswith(url_prefix):
+            continue
+        if not _has_tag(doc, tag):
             continue
         doc_id = doc.get("id", "")
         if not doc_id:
@@ -192,14 +242,18 @@ def _cleanup_keep_latest(url_prefix: str, keep: int = 3) -> int:
             logger.info("Preserving highlighted watch summary: %s", title)
             preserved += 1
             continue
-        if delete_document(doc_id):
+        if dry_run:
+            logger.info("Dry run — would delete old watch summary: %s", title)
+            deleted += 1
+        elif delete_document(doc_id):
             logger.info("Cleaned up old watch summary: %s", title)
             deleted += 1
 
     if preserved:
         logger.info("Preserved %d highlighted watch summaries from deletion", preserved)
     if deleted:
-        logger.info("Deleted %d old watch summaries (keeping %d latest)", deleted, keep)
+        verb = "Would delete" if dry_run else "Deleted"
+        logger.info("%s %d old watch summaries (keeping %d latest)", verb, deleted, keep)
     return deleted
 
 
@@ -214,7 +268,7 @@ def main() -> None:
 
 def _run_summary(args: argparse.Namespace) -> None:
     """Generate the full HTML briefing (existing behaviour)."""
-    _cleanup_old_summaries(SUMMARY_RETENTION_DAYS)
+    _cleanup_old_summaries(SUMMARY_RETENTION_DAYS, dry_run=args.dry_run)
 
     updated_after = (datetime.now() - timedelta(days=args.days)).isoformat()
     raw_docs = _fetch_all_sources(args.sources, updated_after)
@@ -270,6 +324,7 @@ def _run_watch(args: argparse.Namespace) -> None:
         logger.info("Saved watch summary to %s", args.output)
 
     if args.dry_run:
+        _cleanup_keep_latest(url_prefix=WATCH_URL_PREFIX, keep=WATCH_KEEP, dry_run=True)
         logger.info("Dry run — skipping Readwise upload.")
         print(text)
         return
