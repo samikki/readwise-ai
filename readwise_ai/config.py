@@ -1,3 +1,4 @@
+import logging
 import os
 import tomllib
 from pathlib import Path
@@ -5,6 +6,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # --- Secrets from .env ---
 READWISE_TOKEN: str = os.getenv("READWISE_TOKEN", "")
@@ -37,3 +40,34 @@ WATCH_MAX_WORDS: int = _watch.get("max_words", 200)
 WATCH_TAG: str = _watch.get("tag", "WatchSummary")
 WATCH_URL_PREFIX: str = _watch.get("watch_url_prefix", "")
 WATCH_KEEP: int = _watch.get("keep", 3)
+
+
+# --- URL prefix validation ---
+# Cleanup deletes documents whose URL starts with these prefixes. An empty or
+# loose prefix would match the user's own articles, so cleanup refuses to run
+# unless the prefix is an https:// URL with a host that ends with a slash.
+def is_valid_url_prefix(prefix: str) -> bool:
+    """Return True if prefix is safe to use for identifying generated documents."""
+    if not isinstance(prefix, str) or not prefix.endswith("/"):
+        return False
+    if not prefix.startswith("https://"):
+        return False
+    host = prefix[len("https://"):].split("/", 1)[0]
+    return bool(host)
+
+
+SUMMARY_URL_PREFIX_VALID: bool = is_valid_url_prefix(SUMMARY_URL_PREFIX)
+WATCH_URL_PREFIX_VALID: bool = is_valid_url_prefix(WATCH_URL_PREFIX)
+
+if not SUMMARY_URL_PREFIX_VALID:
+    logger.warning(
+        "output.summary_url_prefix %r is invalid (must start with https:// and end with /) "
+        "— summary cleanup is disabled",
+        SUMMARY_URL_PREFIX,
+    )
+if not WATCH_URL_PREFIX_VALID:
+    logger.warning(
+        "watch.watch_url_prefix %r is invalid (must start with https:// and end with /) "
+        "— watch cleanup is disabled",
+        WATCH_URL_PREFIX,
+    )
